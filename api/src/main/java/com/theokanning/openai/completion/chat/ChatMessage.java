@@ -30,7 +30,6 @@ public class ChatMessage {
 	 */
 	@NonNull
 	String role;
-	@NonNull
 	@JsonInclude(JsonInclude.Include.ALWAYS)
 	String content;
 	String name;

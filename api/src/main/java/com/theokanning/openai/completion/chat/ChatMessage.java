@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @Data
 @NoArgsConstructor(force = true)
-//@RequiredArgsConstructor
 @AllArgsConstructor
 public class ChatMessage {
 

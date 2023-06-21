@@ -1,12 +1,8 @@
 package com.theokanning.openai.completion.chat;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 /**
  * <p>Each object has a role (either "system", "user", or "assistant") and content (the content of the message). Conversations can be as short as 1 message or fill many pages.</p>
@@ -20,17 +16,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @Data
 @NoArgsConstructor(force = true)
+@RequiredArgsConstructor
 @AllArgsConstructor
 public class ChatMessage {
 
 	/**
-	 * Must be either 'system', 'user', or 'assistant'.<br>
+	 * Must be either 'system', 'user', 'assistant' or 'function'.<br>
 	 * You may use {@link ChatMessageRole} enum.
 	 */
 	@NonNull
 	String role;
-	@JsonInclude(JsonInclude.Include.ALWAYS)
+	@JsonInclude() // content should always exist in the call, even if it is null
 	String content;
+	//name is optional, The name of the author of this message. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
 	String name;
 	@JsonProperty("function_call")
 	ChatFunctionCall functionCall;

@@ -1,6 +1,6 @@
 package com.theokanning.openai.completion.chat;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,8 +10,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ChatFunctionCall {
 
+    /**
+     * The name of the function being called
+     */
     String name;
 
-    ObjectNode arguments;
+    /**
+     * The arguments of the call produced by the model, represented as a JsonNode for easy manipulation.
+     */
+    JsonNode arguments;
 
 }

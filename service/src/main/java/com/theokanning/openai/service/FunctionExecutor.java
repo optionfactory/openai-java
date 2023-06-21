@@ -1,7 +1,10 @@
 package com.theokanning.openai.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.theokanning.openai.completion.chat.ChatFunction;
 import com.theokanning.openai.completion.chat.ChatFunctionCall;
 import com.theokanning.openai.completion.chat.ChatMessage;
@@ -11,11 +14,16 @@ import java.util.*;
 
 public class FunctionExecutor {
 
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private ObjectMapper MAPPER = new ObjectMapper();
     private final Map<String, ChatFunction> FUNCTIONS = new HashMap<>();
 
     public FunctionExecutor(List<ChatFunction> functions) {
         setFunctions(functions);
+    }
+
+    public FunctionExecutor(List<ChatFunction> functions, ObjectMapper objectMapper) {
+        setFunctions(functions);
+        setObjectMapper(objectMapper);
     }
 
     public Optional<ChatMessage> executeAndConvertToMessageSafely(ChatFunctionCall call) {
@@ -30,36 +38,55 @@ public class FunctionExecutor {
         try {
             return executeAndConvertToMessage(call);
         } catch (Exception exception) {
+            exception.printStackTrace();
             return convertExceptionToMessage(exception);
         }
     }
 
     public ChatMessage convertExceptionToMessage(Exception exception) {
         String error = exception.getMessage() == null ? exception.toString() : exception.getMessage();
-        return new ChatMessage(ChatMessageRole.FUNCTION.value(), "{\"error\": \"" + error + "\"}");
+        return new ChatMessage(ChatMessageRole.FUNCTION.value(), "{\"error\": \"" + error + "\"}", "error");
     }
 
     public ChatMessage executeAndConvertToMessage(ChatFunctionCall call) {
-        return new ChatMessage(ChatMessageRole.FUNCTION.value(), executeAndConvertToJson(call), call.getName());
+        return new ChatMessage(ChatMessageRole.FUNCTION.value(), executeAndConvertToJson(call).toPrettyString(), call.getName());
     }
 
-    public String executeAndConvertToJson(ChatFunctionCall call) {
+    public JsonNode executeAndConvertToJson(ChatFunctionCall call) {
         try {
-            return MAPPER.writeValueAsString(execute(call));
-        } catch (JsonProcessingException e) {
+            Object execution = execute(call);
+            if (execution instanceof TextNode) {
+                JsonNode objectNode = MAPPER.readTree(((TextNode) execution).asText());
+                if (objectNode.isMissingNode())
+                    return (JsonNode) execution;
+                return objectNode;
+            }
+            if (execution instanceof ObjectNode) {
+                return (JsonNode) execution;
+            }
+            if (execution instanceof String) {
+                JsonNode objectNode = MAPPER.readTree((String) execution);
+                if (objectNode.isMissingNode())
+                    throw new RuntimeException("Parsing exception");
+                return objectNode;
+            }
+            return MAPPER.readValue(MAPPER.writeValueAsString(execution), JsonNode.class);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Object execute(ChatFunctionCall call) {
+    @SuppressWarnings("unchecked")
+    public <T> T execute(ChatFunctionCall call) {
         ChatFunction function = FUNCTIONS.get(call.getName());
-        Object obj = null;
+        Object obj;
         try {
-            obj = MAPPER.readValue(call.getArguments().toString(), function.getParametersClass());
+            JsonNode arguments = call.getArguments();
+            obj = MAPPER.readValue(arguments instanceof TextNode ? arguments.asText() : arguments.toPrettyString(), function.getParametersClass());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return function.getExecutor().apply(obj);
+        return (T) function.getExecutor().apply(obj);
     }
 
     public List<ChatFunction> getFunctions() {
@@ -69,6 +96,10 @@ public class FunctionExecutor {
     public void setFunctions(List<ChatFunction> functions) {
         this.FUNCTIONS.clear();
         functions.forEach(f -> this.FUNCTIONS.put(f.getName(), f));
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.MAPPER = objectMapper;
     }
 
 }

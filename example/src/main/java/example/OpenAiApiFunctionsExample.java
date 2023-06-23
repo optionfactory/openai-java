@@ -3,6 +3,7 @@ package example;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.theokanning.openai.completion.chat.*;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest.ChatCompletionRequestFunctionCall;
 import com.theokanning.openai.service.FunctionExecutor;
 import com.theokanning.openai.service.OpenAiService;
 
@@ -41,7 +42,7 @@ class OpenAiApiFunctionsExample {
         String token = System.getenv("OPENAI_TOKEN");
         OpenAiService service = new OpenAiService(token);
 
-        FunctionExecutor functionExecutor = new FunctionExecutor(List.of(ChatFunction.builder()
+        FunctionExecutor functionExecutor = new FunctionExecutor(Collections.singletonList(ChatFunction.builder()
                 .name("get_weather")
                 .description("Get the current weather of a location")
                 .executor(Weather.class, w -> new WeatherResponse(w.location, w.unit, new Random().nextInt(50), "sunny"))

@@ -43,4 +43,5 @@ public class ChatMessage {
 		this.content = content;
 		this.name = name;
 	}
+
 }
